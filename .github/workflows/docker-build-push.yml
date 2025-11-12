@@ -1,0 +1,35 @@
+name: Docker Build & Push Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        required: true
+        type: string
+      dockerfile:
+        required: false
+        type: string
+        default: Dockerfile
+      registry:
+        required: true
+        type: string
+    secrets:
+      REGISTRY_USER:
+        required: true
+      REGISTRY_TOKEN:
+        required: true
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker registry
+        run: echo ${{ secrets.REGISTRY_TOKEN }} | docker login ${{ inputs.registry }} -u ${{ secrets.REGISTRY_USER }} --password-stdin
+
+      - name: Build Docker image
+        run: docker build -t ${{ inputs.registry }}/${{ inputs.image-name }}:${{ github.sha }} -f ${{ inputs.dockerfile }} .
+
+      - name: Push Docker image
+        run: docker push ${{ inputs.registry }}/${{ inputs.image-name }}:${{ github.sha }}
